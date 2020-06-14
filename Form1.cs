@@ -24,6 +24,33 @@ namespace cpuTemp4
         private void Form1_Load(object sender, EventArgs e) {
             Thread thread = new Thread(new ThreadStart(WorkThreadFunction));
             thread.Start();
+            this.Visible = false;
+        }
+
+        public void CreateTextIcon()
+        {
+            Font fontToUse = new Font("Microsoft Sans Serif", 16, FontStyle.Regular, GraphicsUnit.Pixel);
+            Brush brushToUse = new SolidBrush(Color.White);
+            Bitmap bitmapText = new Bitmap(16, 16);
+            Graphics g = System.Drawing.Graphics.FromImage(bitmapText);
+
+            IntPtr cpuIcon;
+
+            g.Clear(Color.Transparent);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            g.DrawString(_cpuTemp, fontToUse, brushToUse, -4, -2);
+            cpuIcon = (bitmapText.GetHicon());
+
+            IntPtr gpuIcon;
+
+            g.Clear(Color.Transparent);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            g.DrawString(_gpuTemp, fontToUse, brushToUse, -4, -2);
+            gpuIcon = (bitmapText.GetHicon());
+
+            notifyIcon1.Icon = System.Drawing.Icon.FromHandle(cpuIcon);
+            notifyIcon2.Icon = System.Drawing.Icon.FromHandle(gpuIcon);
+            //DestroyIcon(hIcon.ToInt32);
         }
 
         public class UpdateVisitor : IVisitor {
@@ -74,6 +101,7 @@ namespace cpuTemp4
                     GetSystemInfo();
                     label1.BeginInvoke(new InvokeDelegate(SetCPUText));
                     label2.BeginInvoke(new InvokeDelegate(SetGPUText));
+                    CreateTextIcon();
                     Thread.Sleep(500);
                 }
             } catch (Exception ex) {
