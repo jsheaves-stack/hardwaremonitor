@@ -14,7 +14,8 @@ namespace cpuTemp4
 {
     public partial class Form1 : Form {
         public delegate void InvokeDelegate();
-        private String cpuTemp;
+        public String _cpuTemp;
+        public String _gpuTemp;
 
         public Form1() {
             InitializeComponent();
@@ -36,34 +37,43 @@ namespace cpuTemp4
             public void VisitSensor(ISensor sensor) { }
             public void VisitParameter(IParameter parameter) { }
         }
-
-        static String GetSystemInfo() {
+        public void GetSystemInfo() {
             UpdateVisitor updateVisitor = new UpdateVisitor();
             Computer computer = new Computer();
             computer.Open();
             computer.CPUEnabled = true;
+            computer.GPUEnabled = true;
             computer.Accept(updateVisitor);
-            String temp;
-            for (int i = 0; i < computer.Hardware.Length; i++) {
-                Console.WriteLine(computer.Hardware[i]);
-                if (computer.Hardware[i].HardwareType == HardwareType.CPU) {
-                    for (int j = 0; j < computer.Hardware[i].Sensors.Length; j++) {
-                        if (computer.Hardware[i].Sensors[j].SensorType == SensorType.Temperature && computer.Hardware[i].Sensors[j].Name == "CPU Package") {
-                            temp = computer.Hardware[i].Sensors[j].Value.ToString();
-                            computer.Close();
-                            return temp;
+            try
+            {
+                for (int i = 0; i < computer.Hardware.Length; i++) {
+                    if (computer.Hardware[i].HardwareType == HardwareType.CPU) {
+                        for (int j = 0; j < computer.Hardware[i].Sensors.Length; j++) {
+                            if (computer.Hardware[i].Sensors[j].SensorType == SensorType.Temperature && computer.Hardware[i].Sensors[j].Name == "CPU Package") {
+                                _cpuTemp = computer.Hardware[i].Sensors[j].Value.ToString();
+                                break;
+                            }
+                        }
+                    } else if(computer.Hardware[i].HardwareType == HardwareType.GpuNvidia || computer.Hardware[i].HardwareType == HardwareType.GpuAti) {
+                        for (int j = 0; j < computer.Hardware[i].Sensors.Length; j++) {
+                            if (computer.Hardware[i].Sensors[j].SensorType == SensorType.Temperature) {
+                                _gpuTemp = computer.Hardware[i].Sensors[j].Value.ToString();
+                                break;
+                            }
                         }
                     }
                 }
-            }
-            return "";
+                computer.Close();
+            } catch (Exception ex) {
+                Console.WriteLine(ex);
+            } 
         }
-
         public void WorkThreadFunction() {
             try {
                 while (true) {
-                    cpuTemp = GetSystemInfo();
-                    label1.BeginInvoke(new InvokeDelegate(SetText));
+                    GetSystemInfo();
+                    label1.BeginInvoke(new InvokeDelegate(SetCPUText));
+                    label2.BeginInvoke(new InvokeDelegate(SetGPUText));
                     Thread.Sleep(500);
                 }
             } catch (Exception ex) {
@@ -71,8 +81,12 @@ namespace cpuTemp4
             }
         }
 
-        private void SetText() {
-            label1.Text = cpuTemp;
+        private void SetCPUText() {
+            label1.Text = _cpuTemp;
+        }
+
+        private void SetGPUText() {
+            label2.Text = _gpuTemp;
         }
     }
 }
